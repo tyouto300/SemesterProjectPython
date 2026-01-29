@@ -416,7 +416,10 @@ def attack(target,attacker,index,
     failSaves += critSuccesses * int(dev)
     realDev = critSuccesses * int(dev)
     expecDev = int(dev) * math.floor((expecW * (1 + int(critW5))/6))
-    expecFail = math.floor(expecW * ((target.sv - attacker.ap[index] + int(hasCover))/6)) - expecDev
+    expecFail = math.floor(expecW * ((target.sv - 1 + attacker.ap[index] - int(hasCover))/6)) - expecDev
+    if target.inv < (target.sv + attacker.ap[index] - int(hasCover)):
+        failSaves = len([x for x in saves if x < target.inv])
+        expecFail = math.floor(expecW * (target.inv - 1)/6)
     #Formula for models killed is: models -= (hits /(math.ceil(wounds per model / damage per hit)) doing non-integer division to allow for damaged models and then also rounding up
     #doing integer division for the time being until i implement damaged models surviving
     expecDamage = (expecFail + expecDev) * attacker.d[index]#Unused right now but would be very easy to implement. I probably will.
