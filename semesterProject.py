@@ -1,28 +1,9 @@
-'''
-Program relating to the tabletop game Warhammer 40,000. Game features combat with various properties
- that influence dice rolls to determine success. Program would prompt user for characteristics of said attack
-   and characteristics of target, as well as checking if certain temporary buffs or debuffs are active. 
-   Program would then randomly “roll” dice to generate a hypothetical attack.
-Would feature damage done with that “roll”, average amount of damage that should be done, and percentage of successful attacks, 
-both on that roll and on average. Would feature options for quickly “re-rolling” and possibly comparing one roll with another with different characteristics.
-Math library expected to be used
-
-'''
 
 import math
 from tkinter import *
 import tkinter as tk
-#from tkinter.ttk import *
 import random
-#import semesterTkinter as tk
-from multiprocessing import Process, Queue, Pipe
-
-#paths = sys.path
-#num = 1
-#for path in paths:
-#    print('{}. {}'.format(num, path))
-#    num += 1
-#import numpy as np
+#from multiprocessing import Process, Queue, Pipe
 '''RULES OF THE GAME
     This program simulates the shooting,charge(hopefully),and fight phases of the tabletop game Warhammer 40,000, built for its 10th edition.
     Every unit in the game has ranged and/or melee weapons, which the program prompts you to input the characteristics of. 
@@ -45,17 +26,14 @@ from multiprocessing import Process, Queue, Pipe
 #    p = Process(target = f, args = (child_conn,))
 #    p.start()
 #    print(parent_conn.recv())
+#The dictionaries act as the "teams", each unit is stored as a key of their name leading to their values
 names = dict()
 enemyNames = dict()
 goodPointer = 0#pointers for your units and the enemy units
 badPointer = 0
+activated = []
 class statLine:
-    #When going through the weapons for the unit, go through the bs and ws lists. With a bs list of n length and ws of m length, the s list will be 
-    # n + m long, and the first n entries we know are for ranged weapons.
-    #Also, the checks for toughness, saves,etc. will be done in the shooting/fight phase, because those can technically change throughout the game
-    #if leaders are sniped out or their bodyguards are killed,etc.. For the average user it won't matter but it does give it technically more options for simulation
-    #When a unit is created at the start of the game, it only has an offensive profile. When a unit is created during your attacks, it only has a defensive profile.
-    #In the subsequent phases where they hit you back and you take damage, your unit is given a defensive profile and the enemy is given an offensive profie;
+   #Offensive stats are arrays because units can be equipped with multiple weapons that each have different values
     def __init__(self,name,a = [],bs = [],ws = [],s = [], ap = [], d = [],t = 0, sv = 0, inv = 0, w =0, m = 0):
         self.name = name
         self.a = a
@@ -69,27 +47,6 @@ class statLine:
         self.inv = inv
         self.w = w
         self.m = m
-def checkedInput(typeToBe,forcePositive = False,binary = False):
-    temp = input().strip()
-    #I don't really think it's necessary to have a special method for checking input but I wanted to give protection against bad inputs and flex recursion
-    if typeToBe == "int":
-        try:temp = int(temp)
-        except ValueError:
-            print(f'Invalid input, please put in a {typeToBe} value instead')
-            checkedInput(typeToBe,forcePositive,binary)
-    elif str(type(temp)) != f"<class '{typeToBe}'>":
-        print(f'Invalid input, please put in a {typeToBe} value instead')
-        checkedInput(typeToBe,forcePositive,binary)
-    if forcePositive == True:
-        if temp < 0:
-            #print("NON-NEGATIVE INTEGER")
-            checkedInput(typeToBe,True,binary)
-    if binary == True:
-        if temp.upper() != "Y" and temp.upper() != "N":
-            print("Y/N")
-            checkedInput(typeToBe,forcePositive,binary)
-        return temp.upper()
-    return temp
 #Debating making this a class to allow you to check every unit's performance by the round with objects representing their shooting/fighting
 def rollDice(amount):
     rolled = [0] * amount
@@ -114,6 +71,7 @@ root.title("Warhammer 40,000 10th Edition Damage Calculator")
 input = tk.StringVar()
 output = tk.StringVar()
 #plan for moving through the program is to have methods for each phase part, and just relabel the boxes and such, then return the values needed to the main program
+#Some initial tkinter variables, a lot of these are re used to try to save memory
 input1 = tk.StringVar(root,"Attacks")#General purpose inputs and input boxes. Initialized to values for creating a unit cuz that's what you'll do first
 input2 = tk.StringVar(root,"Skill")
 input3 = tk.StringVar(root,"Strength")
@@ -130,12 +88,12 @@ inputB7 = tk.Entry(root)
 proceed = tk.Button(root)
 button2 = tk.Button(root)
 intro = tk.Label(root)
-#IMPLEMENT GRID CLEARING METHOD TO CLEAR WHOLE 
+#Clears the screen
 def cleanUp():
     for i in root.grid_slaves():
         i.grid_forget()
 def startUp():
-    #intro = tk.Label(root,text = "Welcome to Warhammer 40,000 10th Edition Damage Calculator. To begin, please press the button.")
+    #Change startup to instead call turn()
     intro.configure(text = "Welcome to Warhammer 40,000 10th Edition Damage Calculator. To begin, please press the button.")
     proceed.configure(text = "Begin",command = lambda:addUnit("your"))
     intro.grid(row = 0, column = 2)
@@ -153,59 +111,47 @@ def setDefault():
     inputB5.grid(row = 5, column = 0,pady = 0)
 #When adding weapon, also add list(or something else) to determine how many models have that weapon
 #add config to allow smart death of units?(Models equipped with basic weapons will be killed before models with special weapons)
-def addUnit(string,toUpdate = None, yours = True,defensive = False):
-    #button2.configure(text = "Submit Name",pady = 0, command ) Debating separate button to confirm and submit name, but if I'm switching pages and text register
-    #then I wouldn't have to worry about overwriting the inputted name until the next time a unit is made.
-    #ADD UNIT DEFENSIVE STATS HERE
-    #Have a truth value that determines if its adding to your units or the enemy's. Then when you fill out the initial info it checks it and updates the dictionary accordingly
-    #Also upon switching screens it resets the inputs to the proper names and stores the name you filled in so that it can still access it.
+#Big ugly method to create a unit. Creates the defensive profile and the offensive profile.
+def addUnit(string, yours = True):
     cleanUp()
-    def addWeapon(string, toUpdate = None,yours = True,defensive = False): 
+    def addWeapon(string, yours = True): 
         #Using inputs 2-6
-        print(f'Defensive?{defensive}')
-        if toUpdate == None:
-            if yours == True:names.update({str(input6.get()):statLine(str(input6.get()),[],[],[],[],[],[],int(input2.get()),int(input3.get()),int(input4.get()),int(input5.get()),int(input7.get()))})
-            else:enemyNames.update({str(input6.get()):statLine(str(input6.get()),[],[],[],[],[],[],int(input2.get()),int(input3.get()),int(input4.get()),int(input5.get()),int(input7.get()))})
-        if defensive == False:
-            cleanUp()
-            intro.grid()
-            proceed.grid()
-            button2.grid()
-            intro.configure(text = "Is " +  string + " unit equipped with a ranged weapon?",pady = 0)
-            proceed.configure(text = "Yes",pady = 0,command = lambda:recursiveAddWeapon(string, True, toUpdate,yours,defensive))
-            button2.configure(text = "No",pady = 0, command = lambda:recursiveAddWeapon(string, False, toUpdate,yours,defensive))
-            intro.grid(row = 0, column = 2)#Can call grid with no parameters to make it appear again
-            proceed.grid(row = 1, column = 1)
-            button2.grid(row = 1, column = 2)
-        else:chooseUnits()
-        def recursiveAddWeapon(string, ranged, toUpdate = None,yours = True,defensive = False):
-            #have ranged be boolean and if its true then add the values into bs instead of ws
-            
+        #Adds a unit with only a defensive profile to the team it should belong to
+        if yours:names.update({str(input6.get()):statLine(str(input6.get()),[],[],[],[],[],[],int(input2.get()),int(input3.get()),int(input4.get()),int(input5.get()),int(input7.get()))})
+        else:enemyNames.update({str(input6.get()):statLine(str(input6.get()),[],[],[],[],[],[],int(input2.get()),int(input3.get()),int(input4.get()),int(input5.get()),int(input7.get()))})
+        cleanUp()
+        intro.grid()
+        proceed.grid()
+        button2.grid()
+        #Determining whether its a melee or ranged weapon and so whether to add its skill to ws or bs
+        intro.configure(text = "Is " +  string + " unit equipped with a ranged weapon?",pady = 0)
+        proceed.configure(text = "Yes",pady = 0,command = lambda:recursiveAddWeapon(string, True, yours))
+        button2.configure(text = "No",pady = 0, command = lambda:recursiveAddWeapon(string, False, yours))
+        intro.grid(row = 0, column = 2)#Can call grid with no parameters to make it appear again
+        proceed.grid(row = 1, column = 1)
+        button2.grid(row = 1, column = 2)
+        def recursiveAddWeapon(string, ranged,yours = True):
             cleanUp()
             setDefault()
             intro.grid()
             intro.configure(text = "Please input the characteristics of the weapon in the boxes below as INTEGER ONLY, then press submit to confirm")
             intro.grid(row = 0, column = 0)
-            def addValues(string, ranged, toUpdate = None,yours = True,defensive = False):
+            def addValues(string, ranged, yours = True):
                 nonlocal a,bs,ws,s,ap,d
                 cleanUp()
-                def helper( toUpdate = None,defensive = False):
+                def helper(yours = True):
                     global input6#probably not needed because just reading input6
-                    #if toUpdate == None:
-                    #names.update({str(input6.get()):statLine(str(input6.get()),a,bs,ws,s,ap,d,0,0,0,0,int(inputB7.get()))})
-                    if toUpdate != None:defensive = True
-                    if defensive == False:
+                    button3.grid_forget()
+                    if yours:
                         print(f'added {a},{bs},{ws},{s},{ap},{d}')
                         intro.configure(text = "Would you like to add any other units?")
                         proceed.configure(text = "Yes",pady = 0,command = lambda:addUnit(string))
-                        button2.configure(text = "No",pady = 0, command = lambda:chooseUnits())
+                        button2.configure(text = "No",pady = 0, command = lambda:turn(True))
                         intro.grid(row = 0, column = 2)
                         proceed.grid(row = 1, column = 4)
                         button2.grid(row = 1, column = 5)
                     else:
-                        print("Choosing weapon")
-                        chooseWeapon(goodPointer,badPointer)
-                    #print(toUpdate in names, toUpdate in enemyNames,toUpdate.name)
+                        chooseUnits(names,enemyNames)
                 a.append(int(input1.get()))
                 if ranged == True:bs.append(int(input2.get()))
                 else:ws.append(int(input2.get()))
@@ -214,24 +160,29 @@ def addUnit(string,toUpdate = None, yours = True,defensive = False):
                 d.append(int(input5.get()))
                 if yours == True:names.update({str(input6.get()):statLine(str(input6.get()),a,bs,ws,s,ap,d,names[str(input6.get())].t,names[str(input6.get())].sv,names[str(input6.get())].inv,names[str(input6.get())].w,names[str(input6.get())].m)})
                 else:enemyNames.update({str(input6.get()):statLine(str(input6.get()),a,bs,ws,s,ap,d,enemyNames[str(input6.get())].t,enemyNames[str(input6.get())].sv,enemyNames[str(input6.get())].inv,enemyNames[str(input6.get())].w,enemyNames[str(input6.get())].m)})
-                #inputB6.grid_forget()
                 intro.grid()
                 proceed.grid()
                 button2.grid()
+                button3 = tk.Button(root)
+                button3.grid()
+                #Allowing to add multiple weapons
+                button3.configure(text = "Melee", command = lambda : recursiveAddWeapon(string,False,yours))
                 intro.configure(text = "Is " + string + " unit equipped with more weapons?",pady = 0)
-                proceed.configure(text = "Yes",pady = 0,command = lambda:recursiveAddWeapon(string,ranged,toUpdate,yours,defensive))
-                button2.configure(text = "No",pady = 0, command = lambda:helper(toUpdate,defensive))#
+                proceed.configure(text = "Ranged",pady = 0,command = lambda:recursiveAddWeapon(string,True,yours))
+                button2.configure(text = "No",pady = 0, command = lambda:helper(yours))
                 intro.grid(row = 0, column = 2)
                 proceed.grid(row = 1, column = 4)
                 button2.grid(row = 1, column = 5)
+                button3.grid(row = 2, column = 4)
             #print(inputB1.get())input tetvariables not needed, can just grab directy
+            #Adding offensive profile. Confirmed upon Finish press
             setDefault()
             input1.set("Attacks")
             input2.set("Skill")
             input3.set("Strength")
             input4.set("Armor Piercing")
             input5.set("Damage")
-            proceed.configure(text = "Finish",pady = 0,command = lambda: addValues(string, ranged, toUpdate,yours,defensive))
+            proceed.configure(text = "Finish",pady = 0,command = lambda: addValues(string, ranged, yours))
             proceed.grid(row = 6,column = 0)
     #Setting up the defensive profile of the unit. Values are confirmed upon click of Next Page
     a = []
@@ -258,18 +209,14 @@ def addUnit(string,toUpdate = None, yours = True,defensive = False):
     proceed.grid(row = 1, column = 5)
 
 def pointer(pointer,pointed):#General purpose method to change general purpose pointers    
-    print(f'setting {pointer} to {pointed}')
     pointer = pointed#Possibly could delete this and just assign the pointers manually, I'll see how many times I can use it and if it's worth
-    print(pointer == pointed)
-    print(pointer)
-    #print(pointer.a)
     return pointer
+#Unfortunately if I want to use general purpose global pointers I need special methods for them
 def specialPointer(pointed):
     global goodPointer
-    print(f'setting good {goodPointer} to {pointed}')
     goodPointer = pointed
-    print(f'{goodPointer == pointed}, {goodPointer}')
     return goodPointer
+
 def specialEvilPointer(pointed):
     global badPointer
     print(f'setting bad {badPointer} to {pointed}')
@@ -282,8 +229,8 @@ def chooseUnits(dict,enemyDict,init = False,melee = False,final = False):
     intro.grid()
     intro.configure(text = "Choose from BOTH lists which unit is attacking and who, or create a target")
     button2.grid()
-    button2.configure(text = "Add New Unit(Target)",pady = 0,command = lambda : addUnit("their",None,False,True))
-    button2.grid(row = 5, column = 1)
+    button2.configure(text = "Add New Unit(Target)",pady = 0,command = lambda : addUnit("their", False))
+    button2.grid(row = 6, column = 1)
     proceed.grid()
     proceed.configure(text = "Attack with selected units()", pady = 0, command = lambda : wrapper())
     button3 = tk.Button(root)
@@ -298,25 +245,31 @@ def chooseUnits(dict,enemyDict,init = False,melee = False,final = False):
     #Creates two radio buttons from your units and the enemy units, which when clicked will assign their respective pointers to them.
     #Upon clicking finalize or whatever I decide to name it, the computer will calculate combat based on the objects linked to those two pointers.
     #Note:Add protection for trying to add units with the same name
+    #Create list of booleans that all start as False, which represents if a given unit has been chosen to shoot/fight this phase.
+    #Only one of these lists is needed, since the targets can't be "activated", and can be shot/fought multiple times by multiple units.
+    if init:
+        global activated
+        activated = [False] * len(list(dict.keys()))
     i = 1
-    for name in names.keys():
-        
-        Radiobutton(root, text = name,variable = input1,value = name,command = lambda : specialPointer(names[name])).grid(row = i, column = 0)
+    j = 0
+    for name in dict.keys():
+        if activated[j] == False:
+            Radiobutton(root, text = name,variable = input1,value = j,command = lambda : specialPointer(dict[name])).grid(row = i, column = 0)
+            i += 1
+        j += 1
+    i = 1
+    for badName in enemyDict.keys():
+        Radiobutton(root,text = badName, variable = input2, value = badName, command = lambda : specialEvilPointer(enemyDict[badName])).grid(row = i, column = 3)
         i += 1
-    i = 0
-    for badName in enemyNames.keys():
-        Radiobutton(root,text = badName, variable = input2, value = badName, command = lambda : specialEvilPointer(enemyNames[badName])).grid(row = i, column = 3)
-        i += 1
-def chooseWeapon(target,attacker):
+
+def chooseWeapon(target,attacker,melee = False):
     cleanUp()
     intro.grid()
     button2.grid_forget()
     intro.configure(text = "Choose from the available weapons which to attack with")
     intro.grid(row = 0, column = 0, pady = 0)
     i = 0
-    range = True
     index = 0
-    #badPointer = 0
     #possibility to not need specialPointer and just declare it again here.Maybe.....
     lethal = tk.BooleanVar()
     sust = tk.BooleanVar()
@@ -372,56 +325,85 @@ def chooseWeapon(target,attacker):
     buffNames = ["Lethal Hits", "Sustained Hits 1", "Devastating Wounds", "Rapid Fire 1", "Blast"]
     #buffs = [False,False,False,False,False,False]
     while i < len(attacker.s):
-        if range == True:
+        if melee == False:
             #Idea is to set goodPointer to i and then have another button that will call the attack gunction with i, which will refer to a specific weapons specs
             Radiobutton(root,text = "Weapon " + str(i + 1), variable = input1, value = i, command = lambda: pointer(index, i)).grid(row = i + 1,column = 0, pady = 0)
             #Once i gets to be 1 larger than the len(bs), then it will be switched to 0 and going through the ws.Still look into combining them
+            print("I is " + str(i))
         else:
             #Remember to use i % len(attacker.bs) when getting the ws so you can just use the same i for all
             Radiobutton(root, text = "Melee Weapon " + str(i % (len(attacker.bs)) + 1), variable = input1, command = lambda: pointer(index, i)).grid(row = i, column = 0, pady = 0)
         i += 1
-        if i == len(attacker.bs):range == False
     proceed.grid()
-    proceed.configure(text = "Attack", command = lambda: attack(target,attacker,index))
+    proceed.configure(text = "Attack", command = lambda: attack(target,attacker,index,
+                                                                lethal.get(),sust.get(),dev.get(),rapid.get(),blast.get(),critH.get(), critW.get(), plusS.get(), plusH.get(), plusStr.get(), plusW.get(),
+                                                                sDebf.get(),hDebf.get(),wDebf.get(),cover.get(),
+                                                                 melee))
     proceed.grid(row = i + 1, column = 0, pady = 0)
+    
     #Note that this method is ONLY for simulating the attacks and damage, choosing who you're attacking with and the target are separate. 
     #add radio list for buffs and debuffs
-    #Idea to make this more efficient, call the objects and reference their stats. However, for like bs and ws that are in separate lists, one number wont work.
-    #Possibly combine bs and ws into one list and have an internal boundary?
-    #Actually, when selecting weapons, the radio list will call the relevant numbers so this doesnt matter
     #Possible attack modifications, these are PER INDIVIDUAL WEAPON, so 5 models with a BLAST weapon will add 5 extra attacks when attacking a unit of 5:
     #Lethal Hits:Hit rolls of 6 automatically wound
-    #Sustained Hits x: Hit rolls of 6 add x extra hits to your total
-    #Devastating Wounds:Wound rolls of 6 automatically wound
+    #Sustained Hits x: Hit rolls of 6 add x successful extra hits to your total
+    #Devastating Wounds:Wound rolls of 6 automatically wound, and the defender cannot roll to try to save them
     #Rapid Fire x: Firing within half range adds x extra attacks
     #Blast: For every 5 models in the targeted unit, add 1 extra attack
-def attack(target,attacker,index):
+def attack(target,attacker,index, 
+           lethal, sust, dev, rapid, blast, critH5, critW5, plusSk, plusH, plusStr, plusW,
+           skDebf, hDebf, wDebf, cover,
+           melee = False,):
     print(target,attacker)
     print(attacker.a[index],attacker.m,attacker.a[index]*attacker.m)
     print(attacker.d[index])
     print(target.w)
-    hits = rollDice((attacker.a[index]*attacker.m))
+    #Checks if the weapon has blast and is applicable
+    if target.m % 5 == 0 and blast :
+        bAt = attacker.m * (target.m // 5)
+    else:bAt = 0
+    #For rapid fire, since I'm not simulating the game board, I will assume if you ticked it it will apply
+    #Expected hits formula: (Total Attacks) - (Total Attacks * (skill-1)/6)
+    #Expected Extra hits formula: (Expected Hits) + (Expected Hits * (1 + int(sust))/6)
+    hits = rollDice((attacker.a[index]*attacker.m) + bAt + (int(rapid) * attacker.m))
     print("Hit Roll")
     print(hits)
-    #Possibly incorporate success measuring into rollDice?
-    if index >= len(attacker.bs):
-        wsBs = attacker.ws[index % len(attacker.bs)]
-    else:wsBs = attacker.bs[index]
-    sucH = len([x for x in hits if x >= wsBs])
-    critSuccesses = len([x for x in hits if x == 6])
-    #Rolling for wounds. Remember to add parameter/variable to allow for sustained hits and such
+    if melee:
+        wsBs = attacker.ws[index % len(attacker.bs)] - int(plusH) - int(plusSk) + int(skDebf) + int(hDebf)
+    else:wsBs = attacker.bs[index] - int(plusH) - int(plusSk) + int(skDebf) + int(hDebf)
+    if wsBs < 2: wsBs = 2
+    if wsBs > 6: wsBs = 6
+    #If critH5 is false, then it wil be 6, otherwise it'll be 5
+    critSuccesses = len([x for x in hits if x == (6 - int(critH5)) and x != 1])
+    sucH = len([x for x in hits if x >= wsBs and x != 1])
+    realH = sucH
+    expecH = len(hits) - math.floor((len(hits) * (wsBs-1)/6))
+    expecExH = expecH * math.floor((int(sust) * (1 + int(critH5)/6)))
+    realExH = int(sust) * (critSuccesses)
+    #Adding an extra amount of hits equal to the critical hits time the sustained hits multipler. If its 0 then itll just stay the same
+    sucH += critSuccesses * int(sust)
+    #Subtracting the amount of critical hits that benefitted from lethal hits, as these ones aren't being rolled to wound
+    sucH -= critSuccesses * int(lethal)
+    #Rolling for wounds.
     wounds = rollDice(sucH)
     print("Wound Roll")
     print(wounds)
-    if attacker.s[index] > 2 * target.t: woundMin = 2
-    elif attacker.s[index] > target.t: woundMin = 3
-    elif attacker.s[index] == target.t: woundMin = 4
-    elif attacker.s[index] < target.t: woundMin = 5
-    elif 2 * attacker.s[index] < target.t: woundMin = 6
-    #note, add a variable to woundMin that is normally zero, but can be 1(or -1) depending on how I do it, to allow for +1 wound stratagems
-    sucW = len([x for x in wounds if x >= woundMin])#Amount of dice that were able to successfully "wound" the target
-    critSuccess = len([x for x in wounds if x == 6])#critical successes are those dice that land on 6 or in some cases 5. They are separate because they can activate special rules
-    #Rolling saving throws. Add parameter for devastating wounds
+    if attacker.s[index] + int(plusStr) > 2 * target.t: woundMin = 2
+    elif attacker.s[index] + int(plusStr) > target.t: woundMin = 3
+    elif attacker.s[index] + int(plusStr) == target.t: woundMin = 4
+    elif attacker.s[index] + int(plusStr) < target.t: woundMin = 5
+    elif 2 * attacker.s[index] + int(plusStr) < target.t: woundMin = 6
+    if woundMin + int(wDebf) > 6: woundMin = 6
+    else:woundMin += int(wDebf)
+    sucW = len([x for x in wounds if x + int(plusW) >= woundMin and x != 1])#Amount of dice that were able to successfully "wound" the target
+    #Before calculating critSuccesses again, adding the amount of lethal hits from before to successful wounds
+    expecLethal = expecH * math.floor((int(lethal) * (1 + int(critH5)/6)))
+    realLethal = int(lethal) * critSuccesses
+    expecW =expecH -  (math.floor(expecH * (woundMin - 1)/6) - expecLethal)
+    sucW += critSuccesses * int(lethal)
+    critSuccesses = len([x for x in wounds if x == (6 - int(critW5)) and x != 1])
+    #critical successes are those dice that land on 6 or in some cases 5. They are separate because they can activate special rules
+    #Same principle as with lethal hits. The devastating wounds aren't rolled for for saving
+    sucW -= critSuccesses * int(dev)
     saves = rollDice(sucW)
     print("Saving Throw(s)")
     print(saves)
@@ -437,11 +419,15 @@ def attack(target,attacker,index):
     expecFail = math.floor(expecW * ((target.sv - attacker.ap[index] + int(hasCover))/6)) - expecDev
     #Formula for models killed is: models -= (hits /(math.ceil(wounds per model / damage per hit)) doing non-integer division to allow for damaged models and then also rounding up
     #doing integer division for the time being until i implement damaged models surviving
+    expecDamage = (expecFail + expecDev) * attacker.d[index]#Unused right now but would be very easy to implement. I probably will.
     killed = failSaves // math.ceil(target.w / attacker.d[index])
-    target.m -= killed#yeah this should definitely be an object
-    diceResults(hits, wounds, saves,sucH,sucW,failSaves,killed)
+    target.m -= killed
+    if target.m <= 0:
+        if target in list(names.keys()):names.pop(target)
+        elif target in list(enemyNames.keys()):enemyNames.pop(target)
+    diceResults(hits, wounds, saves,sucH,sucW,failSaves,killed,expecH,expecExH,realH,realExH,expecW,expecLethal,realLethal,expecDev,expecFail,realFS,realDev)
 
-def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill):
+def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill,expecH,expecExH,realH,realExH,expecW,expecLethal,realLethal,expecDev,expecFail,realFS,realDev):
     cleanUp()
     button2.grid_forget()
     label1 = tk.Label(root, text = "Rolled Hits:")
