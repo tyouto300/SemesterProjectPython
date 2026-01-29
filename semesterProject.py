@@ -233,81 +233,30 @@ def addUnit(string,toUpdate = None, yours = True,defensive = False):
             input5.set("Damage")
             proceed.configure(text = "Finish",pady = 0,command = lambda: addValues(string, ranged, toUpdate,yours,defensive))
             proceed.grid(row = 6,column = 0)
-    if toUpdate == None:    
-        a = []
-        bs = []
-        ws = []
-        s = []
-        ap = []
-        d = []
-        setDefault()#skill strnegh ap dam, inputs 2-5
-        input6.set("Name")
-        input2.set("Toughness")
-        input3.set("Armor Save")
-        input4.set("Invulnerable Save")
-        input5.set("Wounds Per Model")
-        input7.set("Num. Models")
-        intro.configure(text = "Please enter a name and Num. Models for this unit")
-        intro.grid(row = 0, column = 2)
-        inputB1.configure(textvariable = input6)
-        inputB1.grid(row = 1, column = 0)
-        inputB7.configure(textvariable = input7)
-        inputB7.grid(row = 7, column = 0, pady = 0)
-        #Add boolean here for if im doing a special case where I only want to add a defensive profile
-        proceed.configure(text = "Next Page",pady = 0,command = lambda: addWeapon(string,toUpdate,yours,defensive))
-        proceed.grid(row = 1, column = 5)
-    else:
-        a = toUpdate.a
-        bs = toUpdate.bs
-        ws = toUpdate.ws
-        s = toUpdate.s
-        ap = toUpdate.ap
-        d = toUpdate.d
-        #m = toUpdate.m
-        addWeapon(string,toUpdate,yours,defensive)
-    #proceed.configure(text = "Next Page",pady = 0,command = lambda: addWeapon(string,toUpdate))
-    #proceed.grid(row = 1, column = 5)
-    #recursiveAddWeapon(True)
-#add defensive profiile to main unit object
-#I have managed to deprecate this and roll it into the main addUnit
-'''def addUnitDefense(toUpdate = None):#Method for adding a unit's defensive profile. Note to self, when taking damage, use this and combine it with the offensive of the attacked for future
-    cleanUp()
-    setDefault()
-    #print(toUpdate,toUpdate == None,toUpdate.name)
-    intro.configure(text = "Please input the characteristics of the defending unit below as INTEGER ONLY, then press submit to confirm")
-    intro.grid(row = 0, column = 1)
-    input1.set("Toughness")
-    input2.set("Save")
-    input3.set("Wounds")
-    if toUpdate == None: input4.set("Models")#Note to add box for putting in invulnerable save
-    if toUpdate == None:input5.set("Name")
-    setDefault()#sets the default boxes
-    button2.grid()
-    button2.configure(text = "Add Unit", command = lambda : defensiveHelper(str(input5.get()),int(input1.get()),int(input2.get()),int(input3.get()),int(input4.get()), toUpdate))
-    def defensiveHelper(name,t,sv,w,m,toUpdate):
-        #Note to return to the choose units screen if goodPointer is not pointing to an object
-        print(w)
-        if toUpdate == None:
-            global badPointer
-            badPointer = pointer(badPointer,statLine(name,[],[],[],[],[],[],t,sv,0,w,m))
-            enemyNames.update({name:statLine(name,[],[],[],[],[],[],t,sv,0,w,m)})
-            cleanUp()
-            #print(goodPointer,badPointer)
-            chooseUnits()
-        else:
-            global goodPointer
-            if toUpdate.name in names: 
-                names.update({toUpdate.name:statLine(toUpdate.name,toUpdate.a,toUpdate.bs,toUpdate.ws,toUpdate.s,toUpdate.ap,toUpdate.d,toUpdate.t,toUpdate.sv,toUpdate.inv,toUpdate.w,toUpdate.m)})
-                goodPointer = names[goodPointer]
-                print("Updated goodPointer")
-            elif toUpdate.name in enemyNames: enemyNames.update({toUpdate.name:statLine(toUpdate.name,toUpdate.a,toUpdate.bs,toUpdate.ws,toUpdate.s,toUpdate.ap,toUpdate.d,toUpdate.t,toUpdate.sv,toUpdate.inv,toUpdate.w,toUpdate.m)})
-            cleanUp()
-            print(goodPointer,goodPointer.name)
-            attack(goodPointer,toUpdate,len(toUpdate.s)-1)
-        #As a temporary measure until I implement multiple models with the same weapon shooting at once the multiplier will be one  
-        #if type(goodPointer) == int: chooseUnits()
-        #Remember to delete this, it should return to the choose menu anyways
-        #else:attack(badPointer,goodPointer.a[0],goodPointer.bs[0],goodPointer.s[0],goodPointer.ap[0],goodPointer.d[0],1,badPointer.t,badPointer.sv,badPointer.w)'''
+    #Setting up the defensive profile of the unit. Values are confirmed upon click of Next Page
+    a = []
+    bs = []
+    ws = []
+    s = []
+    ap = []
+    d = []
+    setDefault()#skill strnegh ap dam, inputs 2-5
+    input6.set("Name")
+    input2.set("Toughness")
+    input3.set("Armor Save")
+    input4.set("Invulnerable Save")
+    input5.set("Wounds Per Model")
+    input7.set("Num. Models")
+    intro.configure(text = "Please enter a name and Num. Models for this unit")
+    intro.grid(row = 0, column = 2)
+    inputB1.configure(textvariable = input6)
+    inputB1.grid(row = 1, column = 0)
+    inputB7.configure(textvariable = input7)
+    inputB7.grid(row = 7, column = 0, pady = 0)
+    #Add boolean here for if im doing a special case where I only want to add a defensive profile
+    proceed.configure(text = "Next Page",pady = 0,command = lambda: addWeapon(string, yours))
+    proceed.grid(row = 1, column = 5)
+
 def pointer(pointer,pointed):#General purpose method to change general purpose pointers    
     print(f'setting {pointer} to {pointed}')
     pointer = pointed#Possibly could delete this and just assign the pointers manually, I'll see how many times I can use it and if it's worth
@@ -328,11 +277,7 @@ def specialEvilPointer(pointed):
     print(f'{goodPointer == pointed}, {badPointer}')
 #Combat phase consists of listing available units and available enemy targets(radio list). If you want to split-fire(shoot different weapons at different targets)
 # then go through the selection part again. Initialized to no enemy targets, so will be a button that allows to add a new target profile.
-#Future note, make this maybe the same class as the create a unit, so that when taking damage can save the profiles to a target, both defensive and offensive
-#Then once a target it chosen, display a list of the available weapons' characteristics with radio list to choose which one to fire. 
-# Possibly make it a normal list that will then roll for each one sepearately but in a single press.
-#Roll dice and display results, statistical averages, hits/wounds/damage inflicted/models killed
-def chooseUnits():#Going to have two different dictionaries, one for friendly units and one for enemy units
+def chooseUnits(dict,enemyDict,init = False,melee = False,final = False):
     cleanUp()
     intro.grid()
     intro.configure(text = "Choose from BOTH lists which unit is attacking and who, or create a target")
@@ -340,7 +285,16 @@ def chooseUnits():#Going to have two different dictionaries, one for friendly un
     button2.configure(text = "Add New Unit(Target)",pady = 0,command = lambda : addUnit("their",None,False,True))
     button2.grid(row = 5, column = 1)
     proceed.grid()
-    proceed.configure(text = "Attack with selected units()", pady = 0, command = lambda : chooseWeapon(badPointer,goodPointer))
+    proceed.configure(text = "Attack with selected units()", pady = 0, command = lambda : wrapper())
+    button3 = tk.Button(root)
+    if melee and final:button3.configure(text = "End Turn", command = lambda : chooseUnits(enemyDict,dict,True,False))
+    elif final == False:button3.configure(text = "End Turn", command = lambda : chooseUnits(enemyDict,dict,True,melee,True))
+    else:button3.configure(text = "End Turn", command = lambda : chooseUnits(dict,enemyDict,True,True,False))
+    button3.grid(row = 7, column = 1)
+    def wrapper():
+        global activated
+        activated[int(input1.get())] = True
+        chooseWeapon(badPointer,goodPointer,melee)
     #Creates two radio buttons from your units and the enemy units, which when clicked will assign their respective pointers to them.
     #Upon clicking finalize or whatever I decide to name it, the computer will calculate combat based on the objects linked to those two pointers.
     #Note:Add protection for trying to add units with the same name
@@ -356,6 +310,7 @@ def chooseUnits():#Going to have two different dictionaries, one for friendly un
 def chooseWeapon(target,attacker):
     cleanUp()
     intro.grid()
+    button2.grid_forget()
     intro.configure(text = "Choose from the available weapons which to attack with")
     intro.grid(row = 0, column = 0, pady = 0)
     i = 0
@@ -363,6 +318,59 @@ def chooseWeapon(target,attacker):
     index = 0
     #badPointer = 0
     #possibility to not need specialPointer and just declare it again here.Maybe.....
+    lethal = tk.BooleanVar()
+    sust = tk.BooleanVar()
+    dev = tk.BooleanVar()
+    rapid = tk.BooleanVar()
+    blast = tk.BooleanVar()
+    critH = tk.BooleanVar()
+    critW = tk.BooleanVar()
+    plusS = tk.BooleanVar()
+    plusH = tk.BooleanVar()
+    plusStr = tk.BooleanVar()
+    plusW = tk.BooleanVar()
+    sDebf = tk.BooleanVar()
+    hDebf = tk.BooleanVar()
+    wDebf = tk.BooleanVar()
+    cover = tk.BooleanVar()
+    #I really really hate this whole section, basically undid all my work condensing other methods. Note to self, maybe create two lists,
+    #one of tk.BooleanVar()s and then the other of the texts for the toggles. Then loop through those and pass each value of the list to the attack method
+    #Unfortunately I don't think I can define the options in a loop like before, because I need to check each button simultaeneously
+    button1 = tk.Checkbutton(root, text = "Lethal Hits", variable = lethal, onvalue = True, offvalue = False )
+    buttonB = tk.Checkbutton(root, text = "Sustained Hits 1", variable = sust, onvalue = True, offvalue = False )
+    buttonC = tk.Checkbutton(root, text = "Devastating Wounds", variable = dev, onvalue = True, offvalue = False )
+    button4 = tk.Checkbutton(root, text = "Rapid Fire 1", variable = rapid, onvalue = True, offvalue = False )
+    button5 = tk.Checkbutton(root, text = "Blast", variable = blast, onvalue = True, offvalue = False )
+    #Possibly make radio button for crit hits 4? Not sure if that exists
+    button6 = tk.Checkbutton(root, text = "Crit Hits 5+", variable = critH, onvalue = True, offvalue = False)
+    button7 = tk.Checkbutton(root, text = "Crit Wounds 5+", variable = critW, onvalue = True, offvalue = False)
+    button8 = tk.Checkbutton(root, text = "+1 to BS/WS", variable = plusS, onvalue = True, offvalue = False)
+    button9 = tk.Checkbutton(root, text = "+1 to Hit", variable = plusH, onvalue = True, offvalue = False)
+    button10 = tk.Checkbutton(root, text = "+1 to Strength", variable = plusStr, onvalue = True, offvalue = False)
+    button11 = tk.Checkbutton(root, text = "+1 to Wound", variable = plusW, onvalue = True, offvalue = False)
+    button12 = tk.Checkbutton(root, text = "-1 to BS/WS", variable = sDebf, onvalue = True, offvalue = False)
+    button13 = tk.Checkbutton(root, text = "-1 to Hit",variable = hDebf, onvalue = True, offvalue = False)
+    button14 = tk.Checkbutton(root, text = "-1 to Wound", variable = wDebf, onvalue = True, offvalue = False)
+    button15 = tk.Checkbutton(root, text = "Has Cover", variable = cover, onvalue = True, offvalue = False)
+    #Maybe turn this into a for loop, but then I'd still have to do the variable names. I'll look into it
+    button1.grid(row = 1, column = 3)
+    buttonB.grid(row = 2, column = 3)
+    buttonC.grid(row = 3, column = 3)
+    button4.grid(row = 4, column = 3)
+    button5.grid(row = 5, column = 3)
+    button6.grid(row = 6, column = 3)
+    button7.grid(row = 7, column = 3)
+    button8.grid(row = 8, column = 3)
+    button9.grid(row = 9, column = 3)
+    button10.grid(row = 10, column = 3)
+    button11.grid(row = 11, column = 3)
+    button12.grid(row = 1, column = 2)
+    button13.grid(row = 2, column = 2)
+    button14.grid(row = 3, column = 2)
+    button15.grid(row = 4, column = 2)
+    #indexes 0-4, defined below,. index 5 is crit hits on 5+, which I believe is the lowest it goes
+    buffNames = ["Lethal Hits", "Sustained Hits 1", "Devastating Wounds", "Rapid Fire 1", "Blast"]
+    #buffs = [False,False,False,False,False,False]
     while i < len(attacker.s):
         if range == True:
             #Idea is to set goodPointer to i and then have another button that will call the attack gunction with i, which will refer to a specific weapons specs
@@ -417,7 +425,16 @@ def attack(target,attacker,index):
     saves = rollDice(sucW)
     print("Saving Throw(s)")
     print(saves)
-    failSaves = len([x for x in saves if x - attacker.ap[index] < target.sv])#No critical saving throws(I think), and there's no reason to track them
+    if cover:
+        if target.sv < 3 or target.sv - attacker.ap[index] < 3:hasCover = True
+        else:hasCover = False
+    else:hasCover = False
+    failSaves = len([x for x in saves if x - attacker.ap[index]  + int(hasCover) < target.sv])#No critical saving throws(I think), and there's no reason to track them
+    realFS = failSaves
+    failSaves += critSuccesses * int(dev)
+    realDev = critSuccesses * int(dev)
+    expecDev = int(dev) * math.floor((expecW * (1 + int(critW5))/6))
+    expecFail = math.floor(expecW * ((target.sv - attacker.ap[index] + int(hasCover))/6)) - expecDev
     #Formula for models killed is: models -= (hits /(math.ceil(wounds per model / damage per hit)) doing non-integer division to allow for damaged models and then also rounding up
     #doing integer division for the time being until i implement damaged models surviving
     killed = failSaves // math.ceil(target.w / attacker.d[index])
@@ -426,6 +443,7 @@ def attack(target,attacker,index):
 
 def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill):
     cleanUp()
+    button2.grid_forget()
     label1 = tk.Label(root, text = "Rolled Hits:")
     hitList = tk.Label(root,text = repr(hits))
     label2 = tk.Label(root, text = "Rolled Wounds:")
@@ -433,6 +451,16 @@ def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill):
     label3 = tk.Label(root, text = "Enemy rolled Saves:")
     saveList = tk.Label(root, text = repr(saves))
     damageReport = tk.Label(root, text = "Models dead: " + str(kill))
+    label4 = tk.Label(root, text = "Detailed Stats")
+    totalH = tk.Label(root, text = "Total Attacks: " + str(len(hits)))
+    expecHL = tk.Label(root, text = "Expected Hits: " + str(expecH) + ", " + str(expecExH) + " extra expected Sustained Hits, and " + str(expecLethal) + " expected Lethal Hits")
+    realHL = tk.Label(root, text = "Real Hits: " + str(realH) + " and " + str(realExH) + " extra Sustained Hits, and " + str(realLethal) + " Lethal Hits")
+    expecWL = tk.Label(root, text = "Expected Wounds: " + str(expecW)  + " and " + str(expecLethal) + " extra expected from Lethal Hits")
+    realWL = tk.Label(root, text = "Real Wounds: " + str(len(wounds)) + " with " + str(realLethal) + " extra from Lethal Hits")
+    expecFSL = tk.Label(root, text = "Expected Amount of Failed Saves: " + str(expecFail) + " and " + str(expecDev) + " expected Devastating Wounds")
+    realFSL = tk.Label(root, text = "Real Failed Saves: " + str(realFS) + " and " + str(realDev) + " Devastating Wounds")
+    #button2.configure(text = "End turn", command = lambda : chooseUnits(enemyNames,names))
+    proceed.configure(text = "Next Unit",command = lambda: chooseUnits(names,enemyNames))#addUnit("their",badPointer,False))
     label1.grid(row = 1, column = 0, pady = 0)
     hitList.grid(row = 2, column = 0, pady = 0)
     label2.grid(row = 3, column = 0, pady = 0)
@@ -446,8 +474,25 @@ def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill):
     proceed.grid()
     proceed.grid( row = 9, column = 0, pady = 0)
     print(badPointer)
-    #Got rolling to work, now implement enemy turn
-    #implemented giving enemy weapon, now implement turn sequence
-    proceed.configure(text = "Their Turn",command = lambda: addUnit("their",badPointer,False))
+    button2.grid(row = 10, column = 3)
+    label4.grid(row = 10, column = 0)
+    totalH.grid(row = 11, column = 0)
+    expecHL.grid(row = 12, column = 0)
+    realHL.grid(row = 13, column = 0)
+    expecWL.grid(row = 14, column = 0)
+    realWL.grid(row = 15, column = 0)
+    expecFSL.grid(row = 16, column = 0)
+    realFSL.grid(row = 17, column = 0)
+    #Go back to your units, and also mark the unit that was just activated as having been activated
+    proceed.configure(text = "Next Unit",command = lambda: chooseUnits(names,enemyNames))#addUnit("their",badPointer,False))
+    
+#Create turn method that takes control of normal turn order
+#Creating your units is done in startup, then shooting, charging, and fighting is done in the turn method.
+
+#Turn method takes boolean of whose turn it is
+def turn(yourTurn):
+    if yourTurn == True:
+        chooseUnits(names,enemyNames,True)
+
 startUp()  
 root.mainloop()
