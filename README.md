@@ -23,7 +23,7 @@ Defensively units have 5 characteristics:
 1)Toughness- Function explained above
 2)Sv - Function explained above
 3)Invulnerable Save- (Not implemented) Can be chosen to be rolled instead of the normal Save, which is called an Armor Save. Invulnerable Saves are usually worse(higher) than Armor Saves, but they are not affected by Armor Piercing.
-  Not all units get an Invulnerable Save
+  Not all units get an Invulnerable Save. For a unit that does not have an Invulnerable Save, enter 0.
 4)Wounds- The amount of Wounds(health) per model in the unit.
 5)Feel No Pain- (Not implemented) Whenever a unit with a Feel No Pain x+(FNP) fails a save and takes damage, they roll an amount of dice equal to the damage they are about to receive. For each dice that meets/exceeds the listed number on the FNP,
   a single point of Damage is ignored.
