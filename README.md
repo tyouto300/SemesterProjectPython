@@ -30,7 +30,7 @@ Defensively units have 5 characteristics:
 
 2)Sv - Function explained above
 
-3)Invulnerable Save- (Not implemented) Can be chosen to be rolled instead of the normal Save, which is called an Armor Save. Invulnerable Saves are usually worse(higher) than Armor Saves, but they are not affected by Armor Piercing.
+3)Invulnerable Save- Can be chosen to be rolled instead of the normal Save, which is called an Armor Save. Invulnerable Saves are usually worse(higher) than Armor Saves, but they are not affected by Armor Piercing.
   Not all units get an Invulnerable Save. For a unit that does not have an Invulnerable Save, enter 0.
   
 4)Wounds- The amount of Wounds(health) per model in the unit.
