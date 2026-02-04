@@ -99,6 +99,7 @@ def startUp():
     intro.grid(row = 0, column = 2)
     proceed.grid(row = 1, column = 2)
 def setDefault():
+    #method to set some general purpos input boxes to a default state. Used for unit data entering.
     inputB1.configure(textvariable = input1)
     inputB2.configure(textvariable = input2)
     inputB3.configure(textvariable = input3)
@@ -112,6 +113,7 @@ def setDefault():
 #When adding weapon, also add list(or something else) to determine how many models have that weapon
 #add config to allow smart death of units?(Models equipped with basic weapons will be killed before models with special weapons)
 #Big ugly method to create a unit. Creates the defensive profile and the offensive profile.
+#String is used to display whether it's your units or the enemy units in the GUI. yours bool is so the program can know which dictionary to add it to.
 def addUnit(string, yours = True):
     cleanUp()
     def addWeapon(string, yours = True): 
@@ -152,7 +154,7 @@ def addUnit(string, yours = True):
                         button2.grid(row = 1, column = 5)
                     else:
                         chooseUnits(names,enemyNames)
-                a.append(int(input1.get()))
+                a.append(int(input1.get()))#Appending all input weapon data to the relevant lists.
                 if ranged == True:bs.append(int(input2.get()))
                 else:ws.append(int(input2.get()))
                 s.append(int(input3.get()))
@@ -208,8 +210,8 @@ def addUnit(string, yours = True):
     proceed.configure(text = "Next Page",pady = 0,command = lambda: addWeapon(string, yours))
     proceed.grid(row = 1, column = 5)
 
-def pointer(pointer,pointed):#General purpose method to change general purpose pointers    
-    pointer = pointed#Possibly could delete this and just assign the pointers manually, I'll see how many times I can use it and if it's worth
+def pointer(pointer,pointed):#General purpose method to change pointers, for use in frames to assign local varaibles on a button press   
+    pointer = pointed#Possibly could delete this and just assign the pointers manually(not if its on button press), I'll see how many times I can use it and if it's worth
     return pointer
 #Unfortunately if I want to use general purpose global pointers I need special methods for them
 def specialPointer(pointed):
@@ -219,11 +221,12 @@ def specialPointer(pointed):
 
 def specialEvilPointer(pointed):
     global badPointer
-    print(f'setting bad {badPointer} to {pointed}')
+    #print(f'setting bad {badPointer} to {pointed}')
     badPointer = pointed
-    print(f'{goodPointer == pointed}, {badPointer}')
+    #print(f'{goodPointer == pointed}, {badPointer}')
 #Combat phase consists of listing available units and available enemy targets(radio list). If you want to split-fire(shoot different weapons at different targets)
 # then go through the selection part again. Initialized to no enemy targets, so will be a button that allows to add a new target profile.
+#ChooseUnits takes two dictionaries, the first is the attacker and the second is the defender. init bool means it is at the start of a turn, so no units have attacked yet. Melee is whether to show melee weapons and final is kind of unused.
 def chooseUnits(dict,enemyDict,init = False,melee = False,final = False):
     cleanUp()
     intro.grid()
@@ -349,6 +352,8 @@ def chooseWeapon(target,attacker,melee = False):
     #Devastating Wounds:Wound rolls of 6 automatically wound, and the defender cannot roll to try to save them
     #Rapid Fire x: Firing within half range adds x extra attacks
     #Blast: For every 5 models in the targeted unit, add 1 extra attack
+    #attack mod definitions are in the readme
+
 def attack(target,attacker,index, 
            lethal, sust, dev, rapid, blast, critH5, critW5, plusSk, plusH, plusStr, plusW,
            skDebf, hDebf, wDebf, cover,
@@ -396,6 +401,7 @@ def attack(target,attacker,index,
     else:woundMin += int(wDebf)
     sucW = len([x for x in wounds if x + int(plusW) >= woundMin and x != 1])#Amount of dice that were able to successfully "wound" the target
     #Before calculating critSuccesses again, adding the amount of lethal hits from before to successful wounds
+    #Expected lethal hits and expected normal wounds calculations are bascially the same as the expected extra hits and expected hits.
     expecLethal = expecH * math.floor((int(lethal) * (1 + int(critH5)/6)))
     realLethal = int(lethal) * critSuccesses
     expecW =expecH -  (math.floor(expecH * (woundMin - 1)/6) - expecLethal)
@@ -429,7 +435,7 @@ def attack(target,attacker,index,
         if target in list(names.keys()):names.pop(target)
         elif target in list(enemyNames.keys()):enemyNames.pop(target)
     diceResults(hits, wounds, saves,sucH,sucW,failSaves,killed,expecH,expecExH,realH,realExH,expecW,expecLethal,realLethal,expecDev,expecFail,realFS,realDev)
-
+#Display results of dice rolls
 def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill,expecH,expecExH,realH,realExH,expecW,expecLethal,realLethal,expecDev,expecFail,realFS,realDev):
     cleanUp()
     button2.grid_forget()
@@ -479,9 +485,11 @@ def diceResults(hits,wounds,saves,sucH,sucW,sucSV,kill,expecH,expecExH,realH,rea
 #Creating your units is done in startup, then shooting, charging, and fighting is done in the turn method.
 
 #Turn method takes boolean of whose turn it is
+#Not really used because its only simulating combat, turn doesnt really matter
 def turn(yourTurn):
     if yourTurn == True:
         chooseUnits(names,enemyNames,True)
 
 startUp()  
+
 root.mainloop()
